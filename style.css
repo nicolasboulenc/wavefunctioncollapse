@@ -1,0 +1,16 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100svh;
+    background-color: #222;
+    overflow: hidden;
+}
+
+canvas {
+    background-color: #006;
+    width: 800px;
+    height: 800px;
+}
