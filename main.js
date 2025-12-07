@@ -1,17 +1,32 @@
+// @ts-check
 "use strict";
-
-window.addEventListener("load", window_onload);
-
-const app = {
-    ctx: null,
-    scale: 4,
-}
 
 const TILESET_PATH = "wfc_tileset.png";
 const TILESET_SIZE = 16;
 const COLS = 10;
 const ROWS = 10;
 
+
+/**
+ * @type {Object}
+ * @property {CanvasRenderingContext2D} ctx - Canvas context.
+ * @property {number} scale - Canvas scale.
+ */
+const app = {
+    ctx: null,
+    scale: 4,
+}
+
+
+/**
+ * @type {Object}
+ * @property {number} cols - Number of columns.
+ * @property {number} rows - Number of rows.
+ * @property {Array} grid - The grid.
+ * @property {OffscreenCanvas} cto - Backbuffer.
+ * @property {Image} tileset - Images containing tiles.
+ * @property {number} tile_size - Tile size, assumes they are squares.
+ */
 const wfc = {
     cols: 0,
     rows: 0,
@@ -20,6 +35,7 @@ const wfc = {
     tileset: null,
     tile_size: 0,
 }
+
 
 // this is tileset dependent
 const wfc_side_types = {
@@ -87,6 +103,9 @@ const wfc_tiles = [
 ]
 
 
+window.addEventListener("load", window_onload);
+
+
 function window_onload(evt) {
     window.addEventListener("click", (e) => wfc_step());
     wfc_init(COLS, ROWS, TILESET_PATH, TILESET_SIZE);
@@ -97,9 +116,11 @@ function window_onload(evt) {
 
 function app_init() {
     const canvas = document.querySelector("canvas");
+    if(canvas === null) throw new Error("Canvas not found");
     canvas.style.width = `${wfc.cols * wfc.tile_size * app.scale}px`;
     canvas.style.height = `${wfc.rows * wfc.tile_size * app.scale}px`;
     app.ctx = canvas.getContext("2d", {alpha: false});
+    if(app.ctx === null) throw new Error("Ctx not found");
     app.ctx.canvas.width = app.ctx.canvas.clientWidth;
     app.ctx.canvas.height = app.ctx.canvas.clientHeight;
 }
@@ -126,7 +147,7 @@ function wfc_init(cols, rows, tileset_path, tileset_size) {
     wfc.grid = [];
     for (let i=0; i<wfc.rows * wfc.cols; i++) {
         wfc.grid[i] = {
-            tile_idx: null,
+            tile: null,
             options: Array.from(Array(wfc_tiles.length).keys()),
         }
     }
@@ -134,6 +155,42 @@ function wfc_init(cols, rows, tileset_path, tileset_size) {
     wfc.cto = new OffscreenCanvas(wfc.cols * wfc.tile_size, wfc.rows * wfc.tile_size).getContext("2d");
     wfc.tileset = new Image();
     wfc.tileset.src = tileset_path;
+}
+
+
+function wfc_collapse(col, row) {
+
+    if (col < 0 || col >= wfc.cols || row < 0 || row >= wfc.rows) return;
+
+    const cell = wfc.grid[row * wfc.cols + col];
+    const chosen_idx = cell.options[Math.floor(Math.random() * cell.options.length)];
+    // const chosen_idx = 3;
+    cell.tile = wfc_tiles[chosen_idx];
+    cell.options = [chosen_idx];
+}
+
+
+function wfc_propagate(col, row, neighbor, direction, opposite) {
+
+    if (col < 0 || col >= wfc.cols || row < 0 || row >= wfc.rows) return;
+
+    const cell = wfc.grid[row * wfc.cols + col];
+    if (cell.tile !== null) return; // already collapsed
+
+    // work backwards when removing options
+    for (let i = cell.options.length - 1; i >= 0; i--) {
+        const cell_option_idx = cell.options[i];
+        const cell_option = wfc_tiles[cell_option_idx];
+
+        for(let j=0; j<neighbor.options.length; j++) {
+            const neig_option_idx = neighbor.options[j];
+            const neig_option = wfc_tiles[neig_option_idx];
+            if (cell_option.sides[opposite] !== neig_option.sides[direction]) {
+                cell.options.splice(i, 1);
+                break;
+            }
+        }
+    }
 }
 
 
@@ -145,7 +202,7 @@ function wfc_step() {
 
     for (let i=0; i<wfc.grid.length; i++) {
         const cell = wfc.grid[i];
-        if (cell.options.length < min_entropy && cell.tile_idx === null) {
+        if (cell.options.length < min_entropy && cell.tile === null) {
             min_entropy = cell.options.length;
             min_entropy_elems = [];
             min_entropy_elems.push(i);
@@ -156,31 +213,21 @@ function wfc_step() {
     }
 
     // all cells collapsed
-    if (min_entropy === 0) return;
+    if (min_entropy === 1) return;
 
     // randomly pick one of the lowest entropy cells
     const min_entropy_idx = min_entropy_elems[Math.floor(Math.random() * min_entropy_elems.length)];
+    const [col, row] = i2c(min_entropy_idx);
 
     // collapse cell
+    wfc_collapse(col, row);
     const cell = wfc.grid[min_entropy_idx];
-    const chosen_idx = cell.options[Math.floor(Math.random() * cell.options.length)];
-    cell.tile_idx = chosen_idx;
-    cell.options = [];
 
     // TODO: propagate constraints to neighbors
-    wfc_propagate(col, row, cell);
-}
-
-
-function wfc_propagate(col, row, source) {
-    const compatible_tiles = [];
-    for (let i=0; i<wfc_tiles.length; i++) {
-        const tile = wfc_tiles[i];
-        if (tile.sides[side] === side_type) {
-            compatible_tiles.push(i);
-        }
-    }
-    return compatible_tiles;
+    wfc_propagate(col       , row - 1   , cell, "north",    "south");
+    wfc_propagate(col + 1   , row       , cell, "east",     "west");
+    wfc_propagate(col       , row + 1   , cell, "south",    "north");
+    wfc_propagate(col - 1   , row       , cell, "west",     "east");
 }
 
 
@@ -200,7 +247,7 @@ function wfc_draw() {
     for (let r=0; r<wfc.rows; r++) {
         for (let c=0; c<wfc.cols; c++) {
             const cell = wfc.grid[r * wfc.cols + c];
-            if (cell.tile_idx === null) {
+            if (cell.tile === null) {
                 // display entropy
                 cto.fillStyle = "rgba(0, 0, 0, 0.1)";
                 cto.fillRect(c * cell_size, r * cell_size, cell_size, cell_size);
@@ -212,13 +259,23 @@ function wfc_draw() {
                 continue;
             }
             else {
-                const tile = wfc_tiles[cell.tile_idx];
                 const x = c * cell_size;
                 const y = r * cell_size;
-                cto.drawImage(wfc.tileset, tile.image_x, tile.image_y, cell_size, cell_size, x, y, cell_size, cell_size);
+                cto.drawImage(wfc.tileset, cell.tile.image_x, cell.tile.image_y, cell_size, cell_size, x, y, cell_size, cell_size);
             }
 
         }
     }
 }
 
+
+function oob(c, r, col_count, row_count) {
+    // check if out of bounds
+    return (r < 0 || r >= row_count || c < 0 || c >= col_count);
+}
+
+function i2c(idx) {
+    const c = idx % wfc.cols;
+    const r = Math.floor(idx / wfc.cols);
+    return [c, r];
+}
