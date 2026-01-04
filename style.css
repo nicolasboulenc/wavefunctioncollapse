@@ -10,7 +10,7 @@ html, body {
 }
 
 canvas {
-    background-color: #006;
+    background-color: #000;
     width: 800px;
     height: 800px;
 }
