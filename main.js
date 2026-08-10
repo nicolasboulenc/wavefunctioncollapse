@@ -145,9 +145,12 @@ function app_draw() {
     // if(wfc.is_complete === true) {
     //     wfc_draw();
     // }
+
+    // comment to play with mouse
     if(app.paused === false) {
         wfc_loop();
     }
+
     wfc_draw();
     window.requestAnimationFrame(app_draw);
 }
@@ -224,14 +227,6 @@ function wfc_propagate_all(index) {
 
     if(app.paused === true) return;
     if(wfc.is_complete === true) return;
-    
-    const col = index % wfc.cols;
-    const row = Math.floor(index / wfc.cols);
-    if (col < 0 || col >= wfc.cols || row < 0 || row >= wfc.rows) return;
-    
-    const cell = wfc.grid[index];
-    const cell_options = cell.options;
-    cell.needs_redraw = true;
 
     const neig_offsets = [
         {col:  0, row: -1},
@@ -240,40 +235,66 @@ function wfc_propagate_all(index) {
         {col: -1, row:  0},
     ]
 
-    let direction = 0;
-    for(let offset of neig_offsets) {
-        const nc = col + offset.col;
-        const nr = row + offset.row;
-        if (nc < 0 || nc >= wfc.cols || nr < 0 || nr >= wfc.rows) continue;
+    // cascading propagation: only re-visit a cell when one of its neighbors
+    // actually removed an option, so total work stays bounded by how many
+    // options can ever be removed (not a full-grid rescan per step)
+    const queue = [index];
+    const queued = new Set(queue);
 
-        const opposite = (direction + Math.floor(wfc_tiles[0].sides.length/2)) % wfc_tiles[0].sides.length;
-        if(wfc.grid[nr * wfc.cols + nc].is_propagated === true) continue;
+    while (queue.length > 0) {
+        const current = queue.shift();
+        queued.delete(current);
 
-        let neig_options = wfc.grid[nr * wfc.cols + nc].options;
-        for (let i=neig_options.length-1; i>-1; i--) {
-            const neig_option_idx = neig_options[i];
-            const neig_option = wfc_tiles[neig_option_idx];
+        const col = current % wfc.cols;
+        const row = Math.floor(current / wfc.cols);
+        const cell_options = wfc.grid[current].options;
 
-            let found = false;
-            for (let j=0; j<cell_options.length; j++) {
-                const cell_option_idx = cell_options[j];
-                const cell_option = wfc_tiles[cell_option_idx];
-                if (cell_option.sides[direction] === neig_option.sides[opposite]) {
-                    found = true;
-                    break;
+        let direction = 0;
+        for(let offset of neig_offsets) {
+            const nc = col + offset.col;
+            const nr = row + offset.row;
+            if (nc < 0 || nc >= wfc.cols || nr < 0 || nr >= wfc.rows) { direction++; continue; }
+
+            const neig_index = nr * wfc.cols + nc;
+            const neig_cell = wfc.grid[neig_index];
+            if (neig_cell.tile !== null) { direction++; continue; }
+
+            const opposite = (direction + Math.floor(wfc_tiles[0].sides.length/2)) % wfc_tiles[0].sides.length;
+            const neig_options = neig_cell.options;
+            let changed = false;
+
+            for (let i=neig_options.length-1; i>-1; i--) {
+                const neig_option = wfc_tiles[neig_options[i]];
+
+                let found = false;
+                for (let j=0; j<cell_options.length; j++) {
+                    const cell_option = wfc_tiles[cell_options[j]];
+                    if (cell_option.sides[direction] === neig_option.sides[opposite]) {
+                        found = true;
+                        break;
+                    }
+                }
+                if(found === false) {
+                    neig_options.splice(i, 1);
+                    changed = true;
+                    if(neig_options.length === 0) {
+                        console.log(neig_cell);
+                        console.log(`No options left! ${nc} ${nr}`);
+                        app.paused = true;
+                    }
                 }
             }
-            if(found === false) {
-                neig_options.splice(i, 1);
-                if(neig_options.length === 0) {
-                    console.log(wfc.grid[nr * wfc.cols + nc]);
-                    console.log(`No options left! ${col} ${row}`);
-                    // throw new Error(`No options left! ${col} ${row}`)
-                    app.paused = true;
+
+            if (changed === true) {
+                neig_cell.needs_redraw = true;
+                if (app.paused === true) return;
+                if (queued.has(neig_index) === false) {
+                    queue.push(neig_index);
+                    queued.add(neig_index);
                 }
             }
+            direction++;
         }
-        direction++;
     }
 }
 
@@ -288,15 +309,8 @@ function wfc_loop() {
     // collapse cell
     wfc_collapse(min_entropy_idx);
 
-    // propagate constraints to neighbors
+    // propagate constraints to neighbors, cascading until stable
     wfc_propagate_all(min_entropy_idx);
-    // wfc_propagate(min_entropy_idx);
-
-    // const [col, row] = i2c(min_entropy_idx);
-    // wfc_propagate(col       , row - 1   , min_entropy_idx, DIR_NORTH);
-    // wfc_propagate(col + 1   , row       , min_entropy_idx, DIR_EAST);
-    // wfc_propagate(col       , row + 1   , min_entropy_idx, DIR_SOUTH);
-    // wfc_propagate(col - 1   , row       , min_entropy_idx, DIR_WEST);
 }
 
 

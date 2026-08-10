@@ -34,3 +34,7 @@ Main loop (driven by `requestAnimationFrame` in `app_draw`, one step per frame u
 `wfc_draw` renders each cell: an entropy count (options remaining) for uncollapsed cells, or the resolved tile's sprite for collapsed ones. Hovering the canvas also previews the remaining tile options for the cell under the cursor.
 
 Note: `wfc_propagate` (single-direction variant) and some `app_init`/`app_draw` code paths are dead/commented-out alternates left in place from earlier iterations of the propagation approach.
+
+## Memory
+
+This project's auto-memory files (the persistent memory system, `MEMORY.md` + individual memory files) live in `memory/` at the repo root, not the default global memory location. When saving or reading memories for this project, use `memory/` here instead of `~/.claude/projects/.../memory/`.

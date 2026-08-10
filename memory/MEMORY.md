@@ -1,0 +1,1 @@
+- [Propagation stall bug](propagation_stall_bug.md) — non-cascading propagation fixed 2026-08-10; residual early-stall risk is tileset dead-ends, needs backtracking (separate task).
