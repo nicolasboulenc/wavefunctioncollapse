@@ -220,37 +220,6 @@ function wfc_collapse(index, tile_index=-1) {
 }
 
 
-function wfc_propagate(col, row, neighbor_index, direction) {
-    if(wfc.is_complete === true) return;
-    if (col < 0 || col >= wfc.cols || row < 0 || row >= wfc.rows) return;
-    if (wfc.grid[row * wfc.cols + col].tile !== null) return; // already collapsed
-    
-    const cell = wfc.grid[row * wfc.cols + col];
-    cell.needs_redraw = true;
-    const opposite = (direction + Math.floor(wfc_tiles[0].sides.length/2)) % wfc_tiles[0].sides.length
-    const neig_options = wfc.grid[neighbor_index].options;
-
-    // work backwards when removing options
-    for (let i = cell.options.length - 1; i >= 0; i--) {
-        const cell_option_idx = cell.options[i];
-        const cell_option = wfc_tiles[cell_option_idx];
-
-        for(let j=0; j<neig_options.length; j++) {
-            const neig_option_idx = neig_options[j];
-            const neig_option = wfc_tiles[neig_option_idx];
-            if (cell_option.sides[opposite] !== neig_option.sides[direction]) {
-                cell.options.splice(i, 1);
-                break;
-            }
-        }
-    }
-
-    if(cell.options.length === 0) {
-        throw new Error(`no options left ${col} ${row}`)
-    }
-}
-
-
 function wfc_propagate_all(index) {
 
     if(app.paused === true) return;
@@ -321,6 +290,7 @@ function wfc_loop() {
 
     // propagate constraints to neighbors
     wfc_propagate_all(min_entropy_idx);
+    // wfc_propagate(min_entropy_idx);
 
     // const [col, row] = i2c(min_entropy_idx);
     // wfc_propagate(col       , row - 1   , min_entropy_idx, DIR_NORTH);
