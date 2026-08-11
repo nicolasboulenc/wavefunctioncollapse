@@ -13,12 +13,13 @@ async function app_init() {
     const canvas = document.querySelector("canvas");
     const context = canvas.getContext("2d");
 
-    const url = "tileset1/map1.json";
+    const url = "tileset1/map3.json";
     const level = await fetch_level(url);
     console.log(level);
 
     resize_canvas(context, level);
     draw_level(context, level);
+    generate_rules(level, url)
 }
 
 
@@ -89,56 +90,91 @@ function draw_level(context, level) {
 }
 
 
-function generate_constraints(level, url) {
+function generate_rules(level, url) {
 
-    const wfc = { level: url, cells: null }
-    wfc.cells = new Map();
+    const wfc = { tilesets: level.tilesets, rules: null }
+    wfc.rules = [];
+    const rules_map = new Map();
     let index = 0;
 
-    // {
-    //     // id:     "blank",
-    //     sides: [
-    //         SIDE_TYPE_BLANK,
-    //         SIDE_TYPE_BLANK,
-    //         SIDE_TYPE_BLANK,
-    //         SIDE_TYPE_BLANK,
-    //     ],
-    //     image_x: 0,
-    //     image_y: 0,
-    // },
+    const neig_offsets = [
+        {col:  0, row: -1},
+        {col: +1, row:  0},
+        {col:  0, row: +1},
+        {col: -1, row:  0},
+    ]
 
     for(const layer of level.layers) {
-        for(const cell of layer.data) {
+        if(layer.visible !== true) continue;
+        for(const gid of layer.data) {
 
-            let constraint = wfc.cells.get(cell);
-            if(wfc.cells.has(cell) !== true) {
-                constraint = {
-                                sides: [],
-                                tileset_idx: 0,
-                                image_x: 0,
-                                image_y: 0,
-                            }
+            let rule_index = rules_map.get(gid)
+            if(rule_index === undefined) {
+                const rule = {
+                    id: gid,
+                    sides: [],
+                    tileset_idx: 0,
+                    image_x: 0,
+                    image_y: 0,
+                }
 
                 for(let i=0; i<DIR_WEST+1; i++) {
-                    wfc.cells.push(new Set());
+                    rule.sides.push(new Map());
                 }
-            }
-            
-            let si = cell;
-            let tsi = 0;
-            while(si > level.tilesets[tsi].firstgid + level.tilesets[tsi].tilecount - 1) tsi++;
-            const tileset = level.tilesets[tsi];
 
-            const sx = (si % tileset.columns) * tileset.tilewidth;
-            const sy = Math.floor(si / tileset.columns) * tileset.tileheight;
+                if (gid !== 0) {
+                    let tsi = 0;
+                    while (gid > level.tilesets[tsi].firstgid + level.tilesets[tsi].tilecount - 1) tsi++;
+                    const tileset = level.tilesets[tsi];
+                    const si = gid - tileset.firstgid;
+
+                    rule.tileset_idx = tsi;
+                    rule.image_x = (si % tileset.columns) * tileset.tilewidth;
+                    rule.image_y = Math.floor(si / tileset.columns) * tileset.tileheight;
+                }
+                rule_index = wfc.rules.length;
+                wfc.rules.push(rule);
+                rules_map.set(gid, rule_index);
+            }
+
+            let rule = wfc.rules[rule_index];
+
+            const col = index % layer.width;
+            const row = Math.floor(index / layer.width);
+
+            for (let dir = 0; dir < neig_offsets.length; dir++) {
+                const offset = neig_offsets[dir];
+                const ncol = col + offset.col;
+                const nrow = row + offset.row;
+
+                if (ncol < 0 || ncol >= layer.width || nrow < 0 || nrow >= layer.height) continue;
+
+                const nindex = nrow * layer.width + ncol;
+                const ngid = layer.data[nindex];
+
+                let count = rule.sides[dir].get(ngid);
+                if(count === undefined) {
+                    count = 0;
+                }
+
+                rule.sides[dir].set(ngid, count + 1);
+            }
 
             index++;
         }
     }
+
+    // add totals
+
+
+    console.log(JSON.stringify(wfc, map_replacer, 2));
+    return wfc;
 }
 
 
-function generate_hash() {
-
+function map_replacer(key, value) {
+    if (value instanceof Map) {
+        return Object.fromEntries(value);
+    }
+    return value;
 }
-
