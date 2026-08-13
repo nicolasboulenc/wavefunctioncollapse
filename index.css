@@ -11,6 +11,16 @@ html, body {
 
 canvas {
     background-color: #000;
-    width: 800px;
-    height: 800px;
+}
+
+.top {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: #999;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }

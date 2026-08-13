@@ -3,12 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Generator</title>
+    <link rel="stylesheet" href="index.css">
 </head>
 <body>
+    <div class="top">
+        <div>
+            <div>scale: </div><div id="scale-value"></div><div><input type="range" id="scale" name="scale" min="1" max="2" step="0.1"></div>
+        </div>
+        <div>
+            <div>cols: </div><div id="cols-value"></div><div><input type="range" id="cols" name="columns" min="20" max="50" step="5"></div>
+        </div>
+        <div>
+            <div>rows: </div><div id="rows-value"></div><div><input type="range" id="rows" name="rows" min="20" max="50" step="5"></div>
+        </div>
+        <div>
+            <div>seed: </div><div id="seed-value"></div><div><input type="text" id="seed" name="seed"></div>
+        </div>
+        <div>
+            <div>mode: </div><div id="seed-value"></div><div>
+                <select name="render-mode" id="render-mode">
+                    <option value="progress" selected>Progress</option>
+                    <option value="full">Full</option>
+                </select>
+            </div>
+        </div>
+        <div>
+            <div><button id="generate">Generate</button></div>
+        </div>
+        <div>
+            <div><a href="editor.html">Editor</a></div>
+        </div>
+    </div>
     <canvas></canvas>
     <script src="seedrandom.min.js"></script>
-    <script src="main.js"></script>
+    <script src="generator.js"></script>
 </body>
 </html>
