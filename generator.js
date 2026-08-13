@@ -336,7 +336,7 @@ function wfc_propagate_all(wfc, index) {
                 let found = false;
                 for (let j=0; j<cell_options.length; j++) {
                     const cell_option = wfc.rules[cell_options[j]];
-                    if (Object.prototype.hasOwnProperty.call(cell_option.sides[direction], neig_option.id)) {
+                    if (cell_option.sides[direction][neig_option.id] !== undefined) {
                         found = true;
                         break;
                     }

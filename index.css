@@ -1,9 +1,20 @@
-html, body {
+html {
+    margin: 0;
+    padding: 0;
+    width: 100svw;
+    height: 100svh;
+    background-color: #222;
+    overflow: hidden;
+}
+
+body {
     margin: 0;
     padding: 0;
     display: flex;
-    justify-content: center;
-    align-items: center;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    width: 100svw;
     height: 100svh;
     background-color: #222;
     overflow: hidden;
@@ -11,16 +22,101 @@ html, body {
 
 canvas {
     background-color: #000;
+    width: 100px;
 }
 
 .top {
-    position: fixed;
-    top: 0;
-    left: 0;
+    position: static;
+    flex: 0 0 48px;
+    height: 48px;
     width: 100%;
     background-color: #999;
-    z-index: 10;
     display: flex;
     justify-content: center;
     align-items: center;
+}
+
+.editor-content {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: row;
+    min-height: 0;
+    width: 100%;
+}
+
+.editor-content .pane {
+    overflow: auto;
+}
+
+.editor-content .pane-left {
+    flex: 0 0 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.editor-content .pane-right {
+    flex: 1 1 auto;
+    background-color: #333;
+}
+
+.editor-content .gutter {
+    flex: 0 0 6px;
+    cursor: col-resize;
+    background-color: #555;
+}
+
+.editor-content .pane-right > div {
+    padding: 10px;
+    display: flex;
+    gap: 10px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    grid-template-rows: repeat(3, auto);
+    grid-template-areas:
+        ".    n     ."
+        "w    thumb e"
+        ".    s     .";
+    justify-items: center;
+    align-items: center;
+    gap: 2px;
+}
+
+.grid .thumb  { grid-area: thumb; }
+/* --thumb-w & --thumb-w set in js */
+.grid .dir-n, .grid .dir-s { box-sizing: border-box; width: var(--thumb-w); height: calc(var(--thumb-w) / 2); min-height: 0; }
+.grid .dir-e, .grid .dir-w { box-sizing: border-box; height: var(--thumb-h); width: calc(var(--thumb-h) / 2); min-width: 0; }
+.grid .dir-n  { grid-area: n; }
+.grid .dir-e  { grid-area: e; }
+.grid .dir-s  { grid-area: s; }
+.grid .dir-w  { grid-area: w; }
+
+.grid button.active {
+    background-color: #4a90d9;
+    color: #fff;
+}
+
+.side-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+}
+
+.tile-thumb {
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    background-color: #222;
+}
+
+.generator-content {
+    flex: 1 1 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 0;
+    width: 100%;
+    overflow: auto;
 }
