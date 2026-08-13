@@ -1,6 +1,6 @@
 "use strict";
 
-const WFC_RULES_PATH = "tileset1/wfc_rules3.json";
+const WFC_RULES_PATH = "tileset1/wfc_rules4.json";
 const DEFAULT_SCALE = 1;
 const DEFAULT_COLS = 50;
 const DEFAULT_ROWS = 50;

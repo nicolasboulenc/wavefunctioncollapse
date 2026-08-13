@@ -94,6 +94,10 @@ canvas {
 .grid .dir-s  { grid-area: s; }
 .grid .dir-w  { grid-area: w; }
 
+.grid .gid {
+    color: #fff;
+}
+
 .grid button.active {
     background-color: #4a90d9;
     color: #fff;

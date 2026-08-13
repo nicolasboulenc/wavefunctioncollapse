@@ -1,7 +1,7 @@
 "use strict";
 
 
-const MAP_URL = "tileset1/map3.json";
+const MAP_URL = "tileset1/map4.json";
 const DEFAULT_SPLIT = 0.5;
 const SPLIT_MIN = 0.1;
 const SPLIT_MAX = 0.9;
@@ -33,6 +33,34 @@ async function editor_init(editor, url) {
     draw_level(editor.context, level);
     editor.wfc = generate_rules(level, url);
     editor_update(editor.wfc);
+
+    document.querySelector("#download-rules").addEventListener("click", () => {
+        download_rules(editor.wfc);
+    });
+}
+
+
+function map_replacer(key, value) {
+
+    if(value instanceof Map) {
+        return Object.fromEntries(value);
+    }
+    return value;
+}
+
+
+function download_rules(wfc) {
+
+    const json = JSON.stringify(wfc, map_replacer, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "wfc_rules.json";
+    a.click();
+
+    URL.revokeObjectURL(url);
 }
 
 
@@ -270,6 +298,7 @@ function editor_update(wfc) {
         const thumb_h = tileset.tileheight * thumb_scale;
         html += `<div>
             <div class="grid" style="--thumb-w:${thumb_w}px;--thumb-h:${thumb_h}px;">
+                <div class="gid">${rule.id}</div>
                 <div class="thumb" style="width:${thumb_w}px;height:${thumb_h}px;${bg}"></div>
                 <button class="dir-n active" data-rule-idx="${idx}" data-dir="0">N</button>
                 <button class="dir-e" data-rule-idx="${idx}" data-dir="1">E</button>
